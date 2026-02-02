@@ -33,9 +33,23 @@ const HomePage = () => {
     }));
   };
 
-  const openPromptModal = (prompt) => {
+const openPromptModal = async (prompt) => {
+  // Fetch full prompt (this increments views!)
+  try {
+    const fullPrompt = await promptsAPI.getPrompt(prompt.id);
+    setSelectedPrompt(fullPrompt);
+    
+    // Update the card with new view count
+    setPrompts(prevPrompts => 
+      prevPrompts.map(p => 
+        p.id === fullPrompt.id ? fullPrompt : p
+      )
+    );
+  } catch (error) {
+    console.error('Error fetching prompt details:', error);
     setSelectedPrompt(prompt);
-  };
+  }
+};
 
   const closePromptModal = () => {
     setSelectedPrompt(null);
