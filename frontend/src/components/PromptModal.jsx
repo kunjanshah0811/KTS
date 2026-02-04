@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 
 const PromptModal = ({ prompt, onClose }) => {
-  const [copied, setCopied] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -20,11 +21,39 @@ const PromptModal = ({ prompt, onClose }) => {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  const handleCopy = async () => {
+  // Parse prompt into main and example sections
+  const parsePrompt = () => {
+    const text = prompt.prompt_text;
+    if (text.includes('---EXAMPLE---')) {
+      const [promptPart, examplePart] = text.split('---EXAMPLE---');
+      return {
+        prompt: promptPart.trim(),
+        example: examplePart.trim()
+      };
+    }
+    return {
+      prompt: text,
+      example: null
+    };
+  };
+
+  const { prompt: promptOnly, example: exampleSection } = parsePrompt();
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(promptOnly);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleCopyAll = async () => {
     try {
       await navigator.clipboard.writeText(prompt.prompt_text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
@@ -35,6 +64,17 @@ const PromptModal = ({ prompt, onClose }) => {
       onClose();
     }
   };
+
+  // Parse hierarchical category
+  const parseCategory = (category) => {
+    if (category && category.includes(' > ')) {
+      const [mainCat, subCat] = category.split(' > ');
+      return { main: mainCat, sub: subCat };
+    }
+    return { main: null, sub: category };
+  };
+
+  const { main: mainCategory, sub: subCategory } = parseCategory(prompt.category);
 
   if (!prompt) return null;
 
@@ -51,8 +91,13 @@ const PromptModal = ({ prompt, onClose }) => {
               {prompt.title}
             </h2>
             <div className="flex flex-wrap gap-2 items-center">
+              {mainCategory && (
+                <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-medium">
+                  {mainCategory}
+                </span>
+              )}
               <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                {prompt.category}
+                {subCategory}
               </span>
               {prompt.source && (
                 <span className="text-sm text-gray-600">
@@ -78,23 +123,54 @@ const PromptModal = ({ prompt, onClose }) => {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-900">Prompt</h3>
-              <button
-                onClick={handleCopy}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  copied 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
-                }`}
-              >
-                {copied ? '✓ Copied to Clipboard!' : '📋 Copy Prompt'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopyPrompt}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    copiedPrompt
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                  }`}
+                >
+                  {copiedPrompt ? '✓ Copied!' : '📋 Copy Prompt Only'}
+                </button>
+                {exampleSection && (
+                  <button
+                    onClick={handleCopyAll}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      copiedAll
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {copiedAll ? '✓ Copied!' : 'Copy All'}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 leading-relaxed">
-                {prompt.prompt_text}
+                {promptOnly}
               </pre>
             </div>
           </div>
+
+          {/* Example Output Section (if exists) */}
+          {exampleSection && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">📘 Example Output</h3>
+                <span className="text-sm text-gray-500 bg-yellow-50 px-3 py-1 rounded-full border border-yellow-200">
+                  For reference only
+                </span>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <pre className="whitespace-pre-wrap font-mono text-sm text-blue-900 leading-relaxed">
+                  {exampleSection}
+                </pre>
+              </div>
+            </div>
+          )}
 
           {/* Tags */}
           {prompt.tags && prompt.tags.length > 0 && (

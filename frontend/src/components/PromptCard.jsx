@@ -6,7 +6,13 @@ const PromptCard = ({ prompt, onClick }) => {
   const handleCopy = async (e) => {
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(prompt.prompt_text);
+      // Extract only the prompt part (before example)
+      let textToCopy = prompt.prompt_text;
+      if (textToCopy.includes('---EXAMPLE---')) {
+        textToCopy = textToCopy.split('---EXAMPLE---')[0].trim();
+      }
+      
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -18,6 +24,17 @@ const PromptCard = ({ prompt, onClick }) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
+
+  // Parse hierarchical category
+  const parseCategory = (category) => {
+    if (category && category.includes(' > ')) {
+      const [mainCat, subCat] = category.split(' > ');
+      return { main: mainCat, sub: subCat };
+    }
+    return { main: null, sub: category };
+  };
+
+  const { main: mainCategory, sub: subCategory } = parseCategory(prompt.category);
 
   return (
     <div 
@@ -43,10 +60,15 @@ const PromptCard = ({ prompt, onClick }) => {
           </button>
         </div>
 
-        {/* Category Badge */}
-        <div className="mb-3">
+        {/* Category Badges - Hierarchical */}
+        <div className="mb-3 flex flex-wrap gap-2 items-center">
+          {mainCategory && (
+            <span className="inline-block px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-xs font-medium">
+              {mainCategory}
+            </span>
+          )}
           <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-            {prompt.category}
+            {subCategory}
           </span>
         </div>
 

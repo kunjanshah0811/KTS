@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { promptsAPI } from '../utils/api';
 import { useCategories } from '../hooks/usePrompts';
@@ -18,6 +18,20 @@ const AddPromptPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [categoryCounts, setCategoryCounts] = useState({});
+
+  // Fetch category counts
+  useEffect(() => {
+    const fetchCategoryCounts = async () => {
+      try {
+        const stats = await promptsAPI.getStats();
+        setCategoryCounts(stats.categories || {});
+      } catch (err) {
+        console.error('Error fetching category counts:', err);
+      }
+    };
+    fetchCategoryCounts();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,26 +86,49 @@ const AddPromptPage = () => {
     }
   };
 
-  // Predefined categories for dropdown
-  const predefinedCategories = [
-    'Sentiment Analysis',
-    'Qualitative Coding',
-    'Summarization',
-    'Survey Design',
-    'Text Classification',
-    'Qualitative Analysis',
-    'Research Design',
-    'Ethnography',
-    'Mixed Methods',
-    'Academic Writing',
-    'Data Analysis',
-    'Interview Analysis',
-    'Content Analysis',
-    'Discourse Analysis'
-  ];
+  // Hierarchical category structure
+  const categoryHierarchy = {
+    'Data Collection': [
+      'Data Extraction & APIs',
+      'Interview Protocols'
+    ],
+    'Data Preparation': [
+      'Text Preprocessing',
+      'Data Cleaning',
+      'Data Formatting'
+    ],
+    'Text Analysis': [
+      'Text Summarization',
+      'Text Classification',
+      'Sentiment Analysis',
+      'Word Frequency & Patterns'
+    ],
+    'Academic Writing': [
+      'Literature Review',
+      'Research Papers',
+      'Reports & Presentations'
+    ],
+    'Advanced Methods': [
+      'Model Fine-tuning',
+      'Custom API Integration'
+    ]
+  };
 
   // Combine predefined and existing categories
-  const allCategories = [...new Set([...predefinedCategories, ...categories])].sort();
+  const allHierarchicalCategories = { ...categoryHierarchy };
+  
+  // Add any existing categories from database that aren't in predefined list
+  categories.forEach(cat => {
+    if (cat.includes(' > ')) {
+      const [main, sub] = cat.split(' > ');
+      if (!allHierarchicalCategories[main]) {
+        allHierarchicalCategories[main] = [];
+      }
+      if (!allHierarchicalCategories[main].includes(sub)) {
+        allHierarchicalCategories[main].push(sub);
+      }
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,7 +189,7 @@ const AddPromptPage = () => {
             </p>
           </div>
 
-          {/* Category */}
+          {/* Category - Hierarchical Dropdown */}
           <div className="mb-6">
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
               Category <span className="text-red-500">*</span>
@@ -166,10 +203,18 @@ const AddPromptPage = () => {
               className="input-field"
             >
               <option value="">Select a category</option>
-              {allCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
+              {Object.entries(allHierarchicalCategories).map(([mainCat, subCats]) => (
+                <optgroup key={mainCat} label={mainCat}>
+                  {subCats.map((subCat) => {
+                    const fullCategory = `${mainCat} > ${subCat}`;
+                    const count = categoryCounts[fullCategory] || 0;
+                    return (
+                      <option key={fullCategory} value={fullCategory}>
+                        {subCat} ({count})
+                      </option>
+                    );
+                  })}
+                </optgroup>
               ))}
             </select>
             <p className="mt-1 text-sm text-gray-500">

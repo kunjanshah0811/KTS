@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
+  const location = useLocation();
+  const isAddPage = location.pathname === '/add';
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4 py-6">
@@ -20,12 +23,14 @@ const Header = () => {
           </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
-            <Link 
-              to="/" 
-              className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
-            >
-              Browse Prompts
-            </Link>
+            {isAddPage && (
+              <Link 
+                to="/" 
+                className="text-gray-700 hover:text-primary-600 transition-colors font-medium"
+              >
+                Browse Prompts
+              </Link>
+            )}
             <Link 
               to="/add" 
               className="btn-primary"

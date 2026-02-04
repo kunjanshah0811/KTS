@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const SearchBar = ({ onSearch, onCategoryChange, categories, onSortChange, onViewChange, viewMode }) => {
+const SearchBar = ({ onSearch, onCategoryChange, categories, onSortChange, onViewChange, viewMode, onSourceFilter, sourceFilter, categoryCounts = {} }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearchChange = (e) => {
@@ -9,9 +9,36 @@ const SearchBar = ({ onSearch, onCategoryChange, categories, onSortChange, onVie
     onSearch(value);
   };
 
+  // Parse hierarchical categories
+  const parseCategories = () => {
+    const hierarchy = {};
+    
+    categories.forEach(cat => {
+      if (cat.includes(' > ')) {
+        const [main, sub] = cat.split(' > ');
+        if (!hierarchy[main]) {
+          hierarchy[main] = [];
+        }
+        if (!hierarchy[main].includes(cat)) {
+          hierarchy[main].push(cat);
+        }
+      } else {
+        // Handle any non-hierarchical categories
+        if (!hierarchy['Other']) {
+          hierarchy['Other'] = [];
+        }
+        hierarchy['Other'].push(cat);
+      }
+    });
+    
+    return hierarchy;
+  };
+
+  const categoryHierarchy = parseCategories();
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
         {/* Search Input */}
         <div className="md:col-span-5">
           <div className="relative">
@@ -33,17 +60,25 @@ const SearchBar = ({ onSearch, onCategoryChange, categories, onSortChange, onVie
           </div>
         </div>
 
-        {/* Category Filter */}
+        {/* Category Filter - Hierarchical with Counts */}
         <div className="md:col-span-3">
           <select
             onChange={(e) => onCategoryChange(e.target.value)}
             className="input-field"
           >
             <option value="">All Categories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
+            {Object.entries(categoryHierarchy).sort().map(([mainCat, subCats]) => (
+              <optgroup key={mainCat} label={mainCat}>
+                {subCats.sort().map((fullCategory) => {
+                  const subCat = fullCategory.split(' > ')[1] || fullCategory;
+                  const count = categoryCounts[fullCategory] || 0;
+                  return (
+                    <option key={fullCategory} value={fullCategory}>
+                      {subCat} ({count})
+                    </option>
+                  );
+                })}
+              </optgroup>
             ))}
           </select>
         </div>
@@ -88,6 +123,29 @@ const SearchBar = ({ onSearch, onCategoryChange, categories, onSortChange, onVie
             </svg>
           </button>
         </div>
+      </div>
+
+      {/* Wolfram Filter Button */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-600">Filter by source:</span>
+        <button
+          onClick={() => onSourceFilter(sourceFilter === 'wolfram' ? '' : 'wolfram')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            sourceFilter === 'wolfram'
+              ? 'bg-orange-100 text-orange-700 border-2 border-orange-300'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent'
+          }`}
+        >
+          {sourceFilter === 'wolfram' ? '✓ ' : ''}🟠 Wolfram Prompts
+        </button>
+        {sourceFilter && (
+          <button
+            onClick={() => onSourceFilter('')}
+            className="text-sm text-gray-600 hover:text-gray-800 underline"
+          >
+            Clear filter
+          </button>
+        )}
       </div>
     </div>
   );
