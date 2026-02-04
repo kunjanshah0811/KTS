@@ -22,24 +22,27 @@ const AddPromptPage = () => {
   const [categoryCounts, setCategoryCounts] = useState({});
   const [existingPrompts, setExistingPrompts] = useState([]);
 
-// Fetch existing prompts for duplicate checking
-useEffect(() => {
-  const loadPrompts = async () => {
-    try {
-      const data = await promptsAPI.getAll({ limit: 1000 });
-      setExistingPrompts(data);
-    } catch (err) {
-      console.error('Failed to load prompts:', err);
-    }
-  };
-  loadPrompts();
-}, []);
+  // Fetch existing prompts for duplicate checking
+  useEffect(() => {
+    const loadPrompts = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/prompts?limit=500');
+        const data = await response.json();
+        setExistingPrompts(data);
+        console.log('Loaded prompts for duplicate check:', data.length);
+      } catch (err) {
+        console.error('Failed to load prompts:', err);
+      }
+    };
+    loadPrompts();
+  }, []);
 
   // Fetch category counts
   useEffect(() => {
     const fetchCategoryCounts = async () => {
       try {
-        const stats = await promptsAPI.getStats();
+        const response = await fetch('http://localhost:8000/api/stats');
+        const stats = await response.json();
         setCategoryCounts(stats.categories || {});
       } catch (err) {
         console.error('Error fetching category counts:', err);
@@ -63,7 +66,9 @@ useEffect(() => {
   const isDuplicate = existingPrompts.some(p => 
     p.title.trim().toLowerCase() === formData.title.trim().toLowerCase() && 
     p.category.toLowerCase() === formData.category.toLowerCase()
+      
   );
+  //console.log('Duplicate check:', { isDuplicate, existingCount: existingPrompts.length });
 
   if (isDuplicate) {
     setError('A prompt with this title and category already exists. Please use a different title or category.');

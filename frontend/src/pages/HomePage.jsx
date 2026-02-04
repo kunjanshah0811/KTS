@@ -90,7 +90,7 @@ const HomePage = () => {
             Discover LLM Prompts
           </h2>
           <p className="text-gray-600 text-lg">
-            Browse and copy prompts designed for social science research
+            Browse and copy prompts designed for Social Science Research
           </p>
         </div>
 
