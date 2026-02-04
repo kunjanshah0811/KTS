@@ -10,6 +10,7 @@ const AddPromptPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     prompt_text: '',
+    example_output: '',
     category: '',
     tags: '',
     source: ''
@@ -19,7 +20,7 @@ const AddPromptPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [categoryCounts, setCategoryCounts] = useState({});
-
+  
   // Fetch category counts
   useEffect(() => {
     const fetchCategoryCounts = async () => {
@@ -42,49 +43,44 @@ const AddPromptPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
+  e.preventDefault();
+  setSubmitting(true);
+  setError('');
 
-    try {
-      // Process tags (convert comma-separated string to array)
-      const tagsArray = formData.tags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-
-      const promptData = {
-        title: formData.title,
-        prompt_text: formData.prompt_text,
-        category: formData.category,
-        tags: tagsArray,
-        source: formData.source || null
-      };
-
-      await promptsAPI.createPrompt(promptData);
-      
-      setSuccess(true);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        prompt_text: '',
-        category: '',
-        tags: '',
-        source: ''
-      });
-
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-      
-    } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to add prompt');
-    } finally {
-      setSubmitting(false);
+  try {
+    // Combine prompt_text and example_output with marker
+    let finalPromptText = formData.prompt_text;
+    if (formData.example_output.trim()) {
+      finalPromptText += '\n\n---EXAMPLE---\n\n' + formData.example_output;
     }
-  };
+
+    const promptData = {
+      title: formData.title,
+      prompt_text: finalPromptText,
+      category: formData.category,
+      tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      source: formData.source || null
+    };
+
+    await promptsAPI.createPrompt(promptData);
+    
+    // Reset form instead of redirect
+    setFormData({
+      title: '',
+      prompt_text: '',
+      example_output: '',
+      category: '',
+      tags: '',
+      source: ''
+    });
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 3000);
+  } catch (err) {
+    setError(err.message || 'Failed to create prompt');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // Hierarchical category structure
   const categoryHierarchy = {
@@ -150,7 +146,7 @@ const AddPromptPage = () => {
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span className="font-medium">Prompt added successfully! Redirecting...</span>
+              <span className="font-medium">Prompt added successfully!</span>
             </div>
           </div>
         )}
@@ -246,6 +242,28 @@ Classify it as positive, negative, or neutral and explain why."
               💡 Tip: Use {'{curly_braces}'} to indicate variables that should be replaced
             </p>
           </div>
+
+          {/* Add after the prompt_text textarea field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Example / Sample Output (Optional)
+            </label>
+            <textarea
+              name="example_output"
+              value={formData.example_output}
+              onChange={handleChange}
+              rows={6}
+              className="input-field"
+              placeholder="Add an example output to help users understand expected results..."
+            />
+          </div>
+
+                  {/* Add success message before or after error message */}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            Prompt added successfully!
+          </div>
+        )}
 
           {/* Tags */}
           <div className="mb-6">
