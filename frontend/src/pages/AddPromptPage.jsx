@@ -231,9 +231,9 @@ const AddPromptPage = () => {
               className="input-field"
             >
               <option value="">Select a category</option>
-              {Object.entries(allHierarchicalCategories).map(([mainCat, subCats]) => (
+              {Object.entries(allHierarchicalCategories).sort().map(([mainCat, subCats]) => (
                 <optgroup key={mainCat} label={mainCat}>
-                  {subCats.map((subCat) => {
+                  {subCats.sort().map((subCat) => {
                     const fullCategory = `${mainCat} > ${subCat}`;
                     const count = categoryCounts[fullCategory] || 0;
                     return (
