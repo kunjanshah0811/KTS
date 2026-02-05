@@ -13,19 +13,20 @@
 Organize your files like this:
 
 ```
-llm-prompt-library/
-├── docker-compose.yml          ← Put in root
+LLM-PROMPTS-REPO/
+├── .git/
 ├── backend/
-│   ├── Dockerfile             ← Put here
-│   ├── .env                   ← Put here
-│   ├── main.py                ← Your code
-│   ├── requirements.txt       ← Your code
-│   └── [other files]
-└── frontend/
-    ├── Dockerfile             ← Put here
-    ├── package.json           ← Your code
-    ├── src/                   ← Your code
-    └── [other files]
+├── frontend/
+├── .gitignore
+├── ARCHITECTURE.md
+├── DEPLOYMENT.md
+├── DOCKER_SETUP.md
+├── docker-compose.prod.yml
+├── docker-compose.yml
+├── QUICK_REFERENCE.md
+├── README.md
+├── SETUP_GUIDE.md
+└── setup.sh
 ```
 
 ### 3. Copy These Files
